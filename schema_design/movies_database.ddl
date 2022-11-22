@@ -53,5 +53,3 @@ CREATE TABLE IF NOT EXISTS person_film_work (
     role TEXT NOT NULL,
     created timestamp with time zone
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS film_work_person_idx ON person_film_work (film_work_id, person_id);
