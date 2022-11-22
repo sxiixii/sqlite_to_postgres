@@ -5,12 +5,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 INSTALLED_APPS = [
+    # default app
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # developed app
+    'movies',
+
 ]
 
 MIDDLEWARE = [
