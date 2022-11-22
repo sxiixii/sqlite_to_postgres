@@ -29,8 +29,8 @@ class Genre(UUIDMixin, TimeStampedMixin):
 
     class Meta:
         db_table = '"content"."genre"'
-        verbose_name = 'Жанр'
-        verbose_name_plural = 'Жанры'
+        verbose_name = _('genre')
+        verbose_name_plural = _('genres')
 
 
 class FilmType(models.TextChoices):
@@ -64,8 +64,8 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
 
     class Meta:
         db_table = '"content"."film_work"'
-        verbose_name = 'Фильм'
-        verbose_name_plural = 'Фильмы'
+        verbose_name = _('film')
+        verbose_name_plural = _('films')
 
 
 class GenreFilmWork(UUIDMixin):
@@ -76,8 +76,8 @@ class GenreFilmWork(UUIDMixin):
     class Meta:
         db_table = '"content"."genre_film_work"'
         unique_together = (('film_work', 'genre'),)
-        verbose_name = 'Жанр'
-        verbose_name_plural = 'Жанры'
+        verbose_name = _('genre')
+        verbose_name_plural = _('genres')
 
 
 class Person(UUIDMixin, TimeStampedMixin):
@@ -89,8 +89,8 @@ class Person(UUIDMixin, TimeStampedMixin):
 
     class Meta:
         db_table = '"content"."person"'
-        verbose_name = 'Участник'
-        verbose_name_plural = 'Участники'
+        verbose_name = _('person')
+        verbose_name_plural = _('persons')
 
 
 class PersonFilmWork(UUIDMixin):
