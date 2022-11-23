@@ -48,6 +48,7 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
         _('file path'),
         path=film_work_path,
         blank=True,
+        null=True,
     )
     rating = models.FloatField(
         _('rating'),
