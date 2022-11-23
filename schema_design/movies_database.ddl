@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS person_full_name ON person(full_name);
 CREATE TABLE IF NOT EXISTS genre (
     id uuid PRIMARY KEY,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     created timestamp with time zone,
     modified timestamp with time zone
 );
