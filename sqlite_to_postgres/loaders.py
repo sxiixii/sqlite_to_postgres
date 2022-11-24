@@ -1,18 +1,13 @@
 from dataclasses import astuple
-from sqlite3 import Row
-from typing import Generator
+from sqlite3 import DatabaseError, Row
 
+from psycopg2 import Error
 from psycopg2.extras import execute_batch
 
-from movies_dataclasses import (
-    FilmWorkDataClass,
-    GenreDataClass,
-    GenreFilmWorkDataClass,
-    PersonDataClass,
-    PersonFilmWorkDataClass
-)
+from movies_dataclasses import (FilmWorkDataClass, GenreDataClass,
+                                GenreFilmWorkDataClass, PersonDataClass,
+                                PersonFilmWorkDataClass)
 from sql_queries import INSERT_QUERY
-
 
 TABLES = ('film_work', 'person', 'genre', 'person_film_work', 'genre_film_work')
 
@@ -24,10 +19,14 @@ class PostgresSaver:
         self.page_size = page_size
 
     def save_all_data(self, data: dict):
-        for table in TABLES:
-            self._insert_to_table(self._convert_dataclass_to_tuple(data[table]), table)
+        try:
+            for table in TABLES:
+                self._insert_to_table(self._convert_dataclass_to_tuple(data[table]), table)
+        except Error as err:
+            print(f'Во время вставки данных в movies_database произошла ошибка\n{err}')
+            self.conn.rollback()
 
-    def _insert_to_table(self, data: Generator[tuple[any, ...]], table: str):
+    def _insert_to_table(self, data, table: str):
         self._truncate_table(table)
         self._batch_inserting(self.cursor, INSERT_QUERY[table], data)
 
@@ -37,25 +36,30 @@ class PostgresSaver:
     def _truncate_table(self, movie_table: str):
         self.cursor.execute(f"""TRUNCATE content.{movie_table}""")
 
-    def _batch_inserting(self, cursor, query: str, data: Generator[tuple[any, ...]]):
+    def _batch_inserting(self, cursor, query: str, data):
         execute_batch(cursor, query, data, page_size=self.page_size)
         self.conn.commit()
 
 
 class SQLiteExtractor:
     def __init__(self, connection):
-        connection.row_factory = Row
-        self.cursor = connection.cursor()
+        self.conn = connection
+        self.conn.row_factory = Row
+        self.cursor = self.conn.cursor()
 
     def extract_movies(self) -> dict[str, list]:
-        movies_data = {
-            'film_work': self._extract_film_work_to_dataclass(),
-            'person': self._extract_person_to_dataclass(),
-            'genre': self._extract_genre_to_dataclass(),
-            'person_film_work': self._extract_person_film_work_to_dataclass(),
-            'genre_film_work': self._extract_genre_film_work_to_dataclass(),
-        }
-        return movies_data
+        try:
+            movies_data = {
+                'film_work': self._extract_film_work_to_dataclass(),
+                'person': self._extract_person_to_dataclass(),
+                'genre': self._extract_genre_to_dataclass(),
+                'person_film_work': self._extract_person_film_work_to_dataclass(),
+                'genre_film_work': self._extract_genre_film_work_to_dataclass(),
+            }
+            return movies_data
+        except DatabaseError as err:
+            print(f'Во время извлечения данных из sqlite произошла ошибка\n{err}')
+            self.conn.rollback()
 
     def _select_from_table(self, movie_table: str) -> list[dict, ...]:
         self.cursor.execute(f'SELECT * FROM {movie_table};')

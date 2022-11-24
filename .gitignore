@@ -134,3 +134,4 @@ dmypy.json
 *local.txt
 .commands
 utilities
+.DS_Store
