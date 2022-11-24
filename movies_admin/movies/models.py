@@ -44,12 +44,6 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
     title = models.CharField(_('title'), max_length=255)
     description = models.TextField(_('description'), blank=True)
     creation_date = models.DateField(_('creation date'))
-    file_path = models.FilePathField(
-        _('file path'),
-        path=film_work_path,
-        blank=True,
-        null=True,
-    )
     rating = models.FloatField(
         _('rating'),
         blank=True,
@@ -83,7 +77,6 @@ class GenreFilmWork(UUIDMixin):
 
     class Meta:
         db_table = '"content"."genre_film_work"'
-        unique_together = (('film_work', 'genre'),)
         verbose_name = _('genre')
         verbose_name_plural = _('genres')
 
