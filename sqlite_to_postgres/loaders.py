@@ -1,79 +1,45 @@
 from dataclasses import astuple
 from sqlite3 import Row
+from typing import Generator
+
+from psycopg2.extras import execute_batch
 
 from movies_dataclasses import (
     FilmWorkDataClass,
     GenreDataClass,
     GenreFilmWorkDataClass,
-    MovieTable,
     PersonDataClass,
     PersonFilmWorkDataClass
 )
+from sql_queries import INSERT_QUERY
+
+
+TABLES = ('film_work', 'person', 'genre', 'person_film_work', 'genre_film_work')
 
 
 class PostgresSaver:
-    def __init__(self, connection):
-        self.cursor = connection.cursor()
+    def __init__(self, connection, page_size=5000):
+        self.conn = connection
+        self.cursor = self.conn.cursor()
+        self.page_size = page_size
 
-    def save_all_data(self, data):
-        self._film_work_saver(data[MovieTable.film_work])
-        self._person_saver(data[MovieTable.person])
-        self._genre_saver(data[MovieTable.genre])
-        self._genre_film_work_saver(data[MovieTable.genre_film_work])
-        self._person_film_work_saver(data[MovieTable.person_film_work])
+    def save_all_data(self, data: dict):
+        for table in TABLES:
+            self._insert_to_table(self._convert_dataclass_to_tuple(data[table]), table)
 
-    def _truncate_table(self, movie_table: MovieTable):
+    def _insert_to_table(self, data: Generator[tuple[any, ...]], table: str):
+        self._truncate_table(table)
+        self._batch_inserting(self.cursor, INSERT_QUERY[table], data)
+
+    def _convert_dataclass_to_tuple(self, data):
+        return (astuple(movie) for movie in data)
+
+    def _truncate_table(self, movie_table: str):
         self.cursor.execute(f"""TRUNCATE content.{movie_table}""")
 
-    def _film_work_saver(self, data: list[FilmWorkDataClass, ...]):
-        self._truncate_table(MovieTable.film_work)
-        args = ','.join(
-            self.cursor.mogrify("(%s, %s, %s, %s, %s, NOW(), NOW())", astuple(movie)).decode() for movie in data
-        )
-        self.cursor.execute(f"""
-            INSERT INTO content.film_work (title, description, type, id, rating, created, modified)
-            VALUES {args}
-            """)
-
-    def _person_saver(self, data: list[PersonDataClass, ...]):
-        self._truncate_table(MovieTable.person)
-        args = ','.join(
-            self.cursor.mogrify("(%s, %s, NOW(), NOW())", astuple(person)).decode() for person in data
-        )
-        self.cursor.execute(f"""
-            INSERT INTO content.person (full_name, id, created, modified)
-            VALUES {args}
-            """)
-
-    def _genre_saver(self, data: list[GenreDataClass, ...]):
-        self._truncate_table(MovieTable.genre)
-        args = ','.join(
-            self.cursor.mogrify("(%s, %s, %s, NOW(), NOW())", astuple(genre)).decode() for genre in data
-        )
-        self.cursor.execute(f"""
-            INSERT INTO content.genre (name, description, id, created, modified)
-            VALUES {args}
-            """)
-
-    def _genre_film_work_saver(self, data: list[GenreFilmWorkDataClass, ...]):
-        self._truncate_table(MovieTable.genre_film_work)
-        args = ','.join(
-            self.cursor.mogrify("(%s, %s, %s, NOW())", astuple(genre_film_work)).decode() for genre_film_work in data
-        )
-        self.cursor.execute(f"""
-            INSERT INTO content.genre_film_work (genre_id, film_work_id, id, created)
-            VALUES {args}
-            """)
-
-    def _person_film_work_saver(self, data: list[PersonFilmWorkDataClass, ...]):
-        self._truncate_table(MovieTable.person_film_work)
-        args = ','.join(
-            self.cursor.mogrify("(%s, %s, %s, %s, NOW())", astuple(person_film)).decode() for person_film in data
-        )
-        self.cursor.execute(f"""
-            INSERT INTO content.person_film_work (person_id, film_work_id, role, id, created)
-            VALUES {args}
-            """)
+    def _batch_inserting(self, cursor, query: str, data: Generator[tuple[any, ...]]):
+        execute_batch(cursor, query, data, page_size=self.page_size)
+        self.conn.commit()
 
 
 class SQLiteExtractor:
@@ -83,35 +49,34 @@ class SQLiteExtractor:
 
     def extract_movies(self) -> dict[str, list]:
         movies_data = {
-            MovieTable.film_work: self._extract_film_work_to_dataclass(),
-            MovieTable.person: self._extract_person_to_dataclass(),
-            MovieTable.genre: self._extract_genre_to_dataclass(),
-            MovieTable.person_film_work: self._extract_person_film_work_to_dataclass(),
-            MovieTable.genre_film_work: self._extract_genre_film_work_to_dataclass(),
+            'film_work': self._extract_film_work_to_dataclass(),
+            'person': self._extract_person_to_dataclass(),
+            'genre': self._extract_genre_to_dataclass(),
+            'person_film_work': self._extract_person_film_work_to_dataclass(),
+            'genre_film_work': self._extract_genre_film_work_to_dataclass(),
         }
         return movies_data
 
-    def _select_from_table(self, movie_table: MovieTable):
+    def _select_from_table(self, movie_table: str) -> list[dict, ...]:
         self.cursor.execute(f'SELECT * FROM {movie_table};')
+        return self.cursor.fetchall()
 
     def _extract_film_work_to_dataclass(self) -> list[FilmWorkDataClass, ...]:
-        self._select_from_table(MovieTable.film_work)
-        data = self.cursor.fetchall()
+        movies = self._select_from_table('film_work')
         list_of_dataclasses = []
-        for film in data:
+        for movie in movies:
             film_dataclass = FilmWorkDataClass(
-                id=film['id'],
-                title=film['title'],
-                description=film['description'],
-                rating=film['rating'],
-                type=film['type'],
+                id=movie['id'],
+                title=movie['title'],
+                description=movie['description'],
+                rating=movie['rating'],
+                type=movie['type'],
             )
             list_of_dataclasses.append(film_dataclass)
         return list_of_dataclasses
 
     def _extract_person_to_dataclass(self) -> list[PersonDataClass, ...]:
-        self._select_from_table(MovieTable.person)
-        persons = self.cursor.fetchall()
+        persons = self._select_from_table('person')
         list_of_dataclasses = []
         for person in persons:
             person_dataclass = PersonDataClass(
@@ -122,8 +87,7 @@ class SQLiteExtractor:
         return list_of_dataclasses
 
     def _extract_genre_to_dataclass(self) -> list[GenreDataClass, ...]:
-        self._select_from_table(MovieTable.genre)
-        genres = self.cursor.fetchall()
+        genres = self._select_from_table('genre')
         list_of_dataclasses = []
         for genre in genres:
             genre_dataclass = GenreDataClass(
@@ -135,8 +99,7 @@ class SQLiteExtractor:
         return list_of_dataclasses
 
     def _extract_genre_film_work_to_dataclass(self) -> list[GenreFilmWorkDataClass, ...]:
-        self._select_from_table(MovieTable.genre_film_work)
-        films_genres = self.cursor.fetchall()
+        films_genres = self._select_from_table('genre_film_work')
         list_of_dataclasses = []
         for film_genre in films_genres:
             film_genre_dataclass = GenreFilmWorkDataClass(
@@ -148,8 +111,7 @@ class SQLiteExtractor:
         return list_of_dataclasses
 
     def _extract_person_film_work_to_dataclass(self) -> list[PersonFilmWorkDataClass, ...]:
-        self._select_from_table(MovieTable.person_film_work)
-        persons_film = self.cursor.fetchall()
+        persons_film = self._select_from_table('person_film_work')
         list_of_dataclasses = []
         for person_film in persons_film:
             film_person_dataclass = PersonFilmWorkDataClass(

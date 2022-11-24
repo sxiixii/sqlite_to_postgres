@@ -3,16 +3,16 @@ from os import environ
 
 import psycopg2
 from dotenv import load_dotenv
-from psycopg2.extensions import connection as pg_connection
+from psycopg2.extensions import connection as postgres_connection
 from psycopg2.extras import DictCursor
 
 from loaders import PostgresSaver, SQLiteExtractor
 
 
-def load_from_sqlite(sqlite_conn: sqlite3.Connection, pg_conn: pg_connection):
-    sqlite_extractor = SQLiteExtractor(sqlite_conn)
+def load_from_sqlite(sqlite_connection: sqlite3.Connection, pg_connection: postgres_connection):
+    sqlite_extractor = SQLiteExtractor(sqlite_connection)
     data = sqlite_extractor.extract_movies()
-    postgres_saver = PostgresSaver(pg_conn)
+    postgres_saver = PostgresSaver(pg_connection)
     postgres_saver.save_all_data(data)
 
 
