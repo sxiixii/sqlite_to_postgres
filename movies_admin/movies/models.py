@@ -4,8 +4,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .utilities import film_work_path
-
 
 class TimeStampedMixin(models.Model):
     created = models.DateTimeField(_('created'), auto_now_add=True)
