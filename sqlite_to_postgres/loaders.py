@@ -1,8 +1,11 @@
+import sqlite3
 from dataclasses import astuple
 from sqlite3 import DatabaseError, Row
+from typing import Generator
 
 from psycopg2 import Error
 from psycopg2.extras import execute_batch
+from psycopg2.extensions import connection as postgres_connection
 
 from movies_dataclasses import (FilmWorkDataClass, GenreDataClass,
                                 GenreFilmWorkDataClass, PersonDataClass,
@@ -14,7 +17,7 @@ TABLES = ('film_work', 'person', 'genre', 'person_film_work', 'genre_film_work')
 
 
 class PostgresSaver:
-    def __init__(self, connection, page_size=5000):
+    def __init__(self, connection: postgres_connection, page_size: int = 5000):
         self.conn = connection
         self.cursor = self.conn.cursor()
         self.page_size = page_size
@@ -28,23 +31,23 @@ class PostgresSaver:
             self.conn.rollback()
             raise
 
-    def _insert_to_table(self, data, table: str):
+    def _insert_to_table(self, data: Generator[tuple, None, None], table: str) -> None:
         self._truncate_table(table)
-        self._batch_inserting(self.cursor, INSERT_QUERY[table], data)
+        self._batch_inserting(INSERT_QUERY[table], data)
 
-    def _convert_dataclass_to_tuple(self, data):
+    def _convert_dataclass_to_tuple(self, data: list) -> Generator[tuple, None, None]:
         return (astuple(movie) for movie in data)
 
     def _truncate_table(self, movie_table: str):
         self.cursor.execute(f"""TRUNCATE content.{movie_table} CASCADE""")
 
-    def _batch_inserting(self, cursor, query: str, data):
-        execute_batch(cursor, query, data, page_size=self.page_size)
+    def _batch_inserting(self, query: str, data: Generator[tuple, None, None]) -> None:
+        execute_batch(self.cursor, query, data, page_size=self.page_size)
         self.conn.commit()
 
 
 class SQLiteExtractor:
-    def __init__(self, connection):
+    def __init__(self, connection: sqlite3.Connection):
         self.conn = connection
         self.conn.row_factory = Row
         self.cursor = self.conn.cursor()
