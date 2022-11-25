@@ -1,12 +1,11 @@
 import sqlite3
 from os import environ
 
-import psycopg2
 from dotenv import load_dotenv
 from psycopg2.extensions import connection as postgres_connection
-from psycopg2.extras import DictCursor
 
 from loaders import PostgresSaver, SQLiteExtractor
+from context_managers import open_postgresql_db, open_sqlite_db
 
 
 def load_from_sqlite(sqlite_connection: sqlite3.Connection, pg_connection: postgres_connection):
@@ -27,5 +26,6 @@ if __name__ == '__main__':
         'options': '-c search_path=content',
     }
     SQLITE_DB = environ.get('SQLT_DB_NAME')
-    with sqlite3.connect(SQLITE_DB) as sqlite_conn, psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
+
+    with open_sqlite_db(SQLITE_DB) as sqlite_conn, open_postgresql_db(dsl) as pg_conn:
         load_from_sqlite(sqlite_conn, pg_conn)

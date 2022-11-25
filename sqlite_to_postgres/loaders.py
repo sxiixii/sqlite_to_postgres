@@ -34,7 +34,7 @@ class PostgresSaver:
         return (astuple(movie) for movie in data)
 
     def _truncate_table(self, movie_table: str):
-        self.cursor.execute(f"""TRUNCATE content.{movie_table}""")
+        self.cursor.execute(f"""TRUNCATE content.{movie_table} CASCADE""")
 
     def _batch_inserting(self, cursor, query: str, data):
         execute_batch(cursor, query, data, page_size=self.page_size)
