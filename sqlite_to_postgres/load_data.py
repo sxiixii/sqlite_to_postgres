@@ -26,5 +26,5 @@ if __name__ == '__main__':
         'port': environ.get('DB_PORT', 5432),
         'options': '-c search_path=content',
     }
-    with sqlite3.connect('db.sqlite') as sqlite_conn, psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
+    with sqlite3.connect(environ.get('SQLT_DB_NAME')) as sqlite_conn, psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
         load_from_sqlite(sqlite_conn, pg_conn)
