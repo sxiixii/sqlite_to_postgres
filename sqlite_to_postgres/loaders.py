@@ -7,6 +7,7 @@ from psycopg2.extras import execute_batch
 from movies_dataclasses import (FilmWorkDataClass, GenreDataClass,
                                 GenreFilmWorkDataClass, PersonDataClass,
                                 PersonFilmWorkDataClass)
+from logger_setup import log
 from sql_queries import INSERT_QUERY
 
 TABLES = ('film_work', 'person', 'genre', 'person_film_work', 'genre_film_work')
@@ -23,8 +24,9 @@ class PostgresSaver:
             for table in TABLES:
                 self._insert_to_table(self._convert_dataclass_to_tuple(data[table]), table)
         except Error as err:
-            print(f'Во время вставки данных в movies_database произошла ошибка\n{err}')
+            log.critical(f'Во время вставки данных в movies_database произошла ошибка: {err}')
             self.conn.rollback()
+            raise
 
     def _insert_to_table(self, data, table: str):
         self._truncate_table(table)
@@ -58,8 +60,9 @@ class SQLiteExtractor:
             }
             return movies_data
         except DatabaseError as err:
-            print(f'Во время извлечения данных из sqlite произошла ошибка\n{err}')
+            log.critical(f'Во время извлечения данных из sqlite произошла ошибка: {err}')
             self.conn.rollback()
+            raise
 
     def _select_from_table(self, movie_table: str) -> list[dict, ...]:
         self.cursor.execute(f'SELECT * FROM {movie_table};')
