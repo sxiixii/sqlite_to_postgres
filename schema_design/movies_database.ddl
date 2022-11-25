@@ -49,4 +49,4 @@ CREATE INDEX IF NOT EXISTS film_work_title ON film_work(title);
 CREATE INDEX IF NOT EXISTS film_work_rating_creation_date ON film_work(rating, creation_date);
 CREATE INDEX IF NOT EXISTS person_full_name ON person(full_name);
 CREATE UNIQUE INDEX IF NOT EXISTS film_work_genre_idx ON genre_film_work (film_work_id, genre_id);
-CREATE UNIQUE INDEX IF NOT EXISTS film_work_person_idx ON person_film_work (person_id, film_work_id, role);
+CREATE UNIQUE INDEX IF NOT EXISTS person_film_work_role_idx ON person_film_work (person_id, film_work_id, role);

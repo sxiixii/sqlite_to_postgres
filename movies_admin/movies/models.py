@@ -69,12 +69,15 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
 
 
 class GenreFilmWork(UUIDMixin):
-    film_work = models.ForeignKey('FilmWork', on_delete=models.CASCADE)
-    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
+    film_work = models.ForeignKey(FilmWork, on_delete=models.CASCADE)
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
     created = models.DateTimeField(_('created'), auto_now_add=True)
 
     class Meta:
         db_table = '"content"."genre_film_work"'
+        indexes = [
+            models.Index(fields=['film_work', 'genre'], name='film_work_genre_idx'),
+        ]
         verbose_name = _('genre')
         verbose_name_plural = _('genres')
 
@@ -92,11 +95,29 @@ class Person(UUIDMixin, TimeStampedMixin):
         verbose_name_plural = _('persons')
 
 
+class PersonRole(models.TextChoices):
+    ACTOR = 'actor', _('Actor')
+    DIRECTOR = 'director', _('Director')
+    SCREENWRITER = 'screenwriter', _('Screenwriter')
+    PRODUCER = 'producer', _('Producer')
+    OPERATOR = 'operator', _('Operator')
+    COMPOSER = 'composer', _('Composer')
+
+
 class PersonFilmWork(UUIDMixin):
-    film_work = models.ForeignKey('FilmWork', on_delete=models.CASCADE)
-    person = models.ForeignKey('Person', on_delete=models.CASCADE)
-    role = models.TextField(_('role'), null=True)
+    film_work = models.ForeignKey(FilmWork, related_name='person_film', on_delete=models.CASCADE)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    role = models.CharField(
+        _('role'),
+        max_length=50,
+        choices=PersonRole.choices,
+        default=PersonRole.ACTOR,
+        null=True,
+    )
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = '"content"."person_film_work"'
+        indexes = [
+            models.Index(fields=['person', 'film_work', 'role'], name='person_film_work_role_idx'),
+        ]
