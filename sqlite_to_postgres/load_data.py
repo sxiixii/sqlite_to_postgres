@@ -1,11 +1,10 @@
 import sqlite3
 from os import environ
 
-from dotenv import load_dotenv
-from psycopg2.extensions import connection as postgres_connection
-
-from loaders import PostgresSaver, SQLiteExtractor
 from context_managers import open_postgresql_db, open_sqlite_db
+from dotenv import load_dotenv
+from loaders import PostgresSaver, SQLiteExtractor
+from psycopg2.extensions import connection as postgres_connection
 
 
 def load_from_sqlite(sqlite_connection: sqlite3.Connection, pg_connection: postgres_connection):
