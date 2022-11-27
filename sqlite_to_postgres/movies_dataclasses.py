@@ -37,3 +37,12 @@ class PersonFilmWorkDataClass:
     film_work_id: UUID
     role: str
     id: UUID = field(default_factory=uuid4)
+
+
+MOVIE_DATACLASS = {
+    'person': PersonDataClass,
+    'film_work': FilmWorkDataClass,
+    'genre': GenreDataClass,
+    'genre_film_work': GenreFilmWorkDataClass,
+    'person_film_work': PersonFilmWorkDataClass,
+}
