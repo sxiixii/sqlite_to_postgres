@@ -3,7 +3,7 @@ from dataclasses import astuple, dataclass
 from sqlite3 import DatabaseError, Row
 from typing import Generator
 
-from logger_setup import log
+from project_logger import log
 from movies_dataclasses import MOVIE_DATACLASS
 from psycopg2 import Error
 from psycopg2.extensions import connection as postgres_connection
